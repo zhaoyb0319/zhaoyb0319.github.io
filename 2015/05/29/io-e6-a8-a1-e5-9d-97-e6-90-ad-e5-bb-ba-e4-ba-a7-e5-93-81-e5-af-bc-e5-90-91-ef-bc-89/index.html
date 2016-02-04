@@ -1,0 +1,340 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>IO模块搭建(产品导向） | Zhaoyb</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!-- Set render engine for 360 browser -->
+  <meta name="renderer" content="webkit">
+  <!-- No Baidu Siteapp-->
+  <meta http-equiv="Cache-Control" content="no-siteapp"/>
+  <meta name="description" content="产品的要求如下，各状态下提示语做相应处理：
+
+触发操作，网络失败时（连接不上接口时）
+触发操作，没有相关权限时
+触发操作，接口端或其他第三方接口失败导致操作错误
+触发操作，没有获取到信息时
+
+需求导致了，要对网络IO层的返回状态进行监控，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="IO模块搭建(产品导向）">
+<meta property="og:url" content="http://www.zhaoyb.cn/2015/05/29/io-e6-a8-a1-e5-9d-97-e6-90-ad-e5-bb-ba-e4-ba-a7-e5-93-81-e5-af-bc-e5-90-91-ef-bc-89/index.html">
+<meta property="og:site_name" content="Zhaoyb">
+<meta property="og:description" content="产品的要求如下，各状态下提示语做相应处理：
+
+触发操作，网络失败时（连接不上接口时）
+触发操作，没有相关权限时
+触发操作，接口端或其他第三方接口失败导致操作错误
+触发操作，没有获取到信息时
+
+需求导致了，要对网络IO层的返回状态进行监控，">
+<meta property="og:updated_time" content="2016-02-04T08:08:13.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="IO模块搭建(产品导向）">
+<meta name="twitter:description" content="产品的要求如下，各状态下提示语做相应处理：
+
+触发操作，网络失败时（连接不上接口时）
+触发操作，没有相关权限时
+触发操作，接口端或其他第三方接口失败导致操作错误
+触发操作，没有获取到信息时
+
+需求导致了，要对网络IO层的返回状态进行监控，">
+  
+  
+    <link rel="icon" href="/img/logo.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <!-- Add to homescreen for Chrome on Android -->    
+    <link rel="icon" sizes="192x192" href="/img/logo.png">
+    <!-- Add to homescreen for Safari on iOS -->
+    <link rel="apple-touch-icon-precomposed" href="/img/logo.png">    
+    <!-- Tile icon for Win8 (144x144 + tile color) -->
+    <meta name="msapplication-TileImage" content="/img/logo.png">
+    <meta name="msapplication-TileColor" content="#0e90d2">
+  
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  <!--[if lt IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.min.js"></script><![endif]-->
+  
+  
+<script type="text/javascript">
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?10f2720e6f47d1b4a5ebc811df8dc361";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+</head>
+<body>
+<div id="container">
+  <div id="wrap">
+    <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Zhaoyb</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">专注于移动互联网，Android、IOS、开源及性能优化</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">首页</a>
+        
+          <a class="main-nav-link" href="/archives">文章</a>
+        
+          <a class="main-nav-link" href="/about">关于</a>
+        
+      </nav>
+      <!--
+      <nav id="sub-nav">
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="http://www.baidu.com/baidu" method="get" accept-charset="utf-8" class="search-form">
+          <input type="search" name="word" maxlength="20" class="search-form-input" placeholder="Search">
+          <input type="submit" value="" class="search-form-submit">
+          <input name=tn type=hidden value="bds">
+          <input name=cl type=hidden value="3">
+          <input name=ct type=hidden value="2097152">
+          <input type="hidden" name="si" value="www.zhaoyb.cn">
+        </form>
+      </div>
+      -->
+    </div>
+  </div>
+</header>
+    <div class="outer">
+      <section id="main"><article id="post-io-e6-a8-a1-e5-9d-97-e6-90-ad-e5-bb-ba-e4-ba-a7-e5-93-81-e5-af-bc-e5-90-91-ef-bc-89" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/29/io-e6-a8-a1-e5-9d-97-e6-90-ad-e5-bb-ba-e4-ba-a7-e5-93-81-e5-af-bc-e5-90-91-ef-bc-89/" class="article-date">
+  <time datetime="2015-05-29T02:05:13.000Z" itemprop="datePublished">2015-05-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Android/">Android</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      IO模块搭建(产品导向）
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <p>产品的要求如下，各状态下提示语做相应处理：</p>
+<ul>
+<li>触发操作，网络失败时（连接不上接口时）</li>
+<li>触发操作，没有相关权限时</li>
+<li>触发操作，接口端或其他第三方接口失败导致操作错误</li>
+<li>触发操作，没有获取到信息时</li>
+</ul>
+<p>需求导致了，要对网络IO层的返回状态进行监控，<br><a id="more"></a><br>那想到的思路就是，需要有相应的任务机制和回调，，下面说下之前用过一种处理思路</p>
+<p>IOTask：用于封装任务</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">IOTask</span></span>&#123;</span><br><span class="line"></span><br><span class="line"><span class="comment">/***************************************************************************</span><br><span class="line">* 任务状态相关的属性</span><br><span class="line">**************************************************************************/</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/** 任务的状态*/</span></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">int</span> state;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** 任务状态定义 */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> STATE_START       = <span class="number">1</span>;   <span class="comment">//任务开始执行</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> STATE_INPROGRESS = <span class="number">2</span>;    <span class="comment">//下载中</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> STATE_COMPLETE   = <span class="number">3</span>;    <span class="comment">//任务处理完成</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> STATE_FAILED     = <span class="number">4</span>;    <span class="comment">//任务处理失败</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> STATE_CANCELED   = <span class="number">5</span>;    <span class="comment">//任务取消</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/***************************************************************************</span><br><span class="line">* 任务的优先级</span><br><span class="line">**************************************************************************/</span></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">int</span> mPriority;</span><br><span class="line"></span><br><span class="line"><span class="comment">/***************************************************************************</span><br><span class="line">* 任务的错误信息</span><br><span class="line">**************************************************************************/</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/** 任务的异常 */</span></span><br><span class="line"><span class="keyword">protected</span> Throwable e;</span><br><span class="line"><span class="comment">/** 任务的错误信息 */</span></span><br><span class="line"><span class="keyword">protected</span> String errMessage;</span><br><span class="line"></span><br><span class="line"><span class="comment">/***************************************************************************</span><br><span class="line">* 任务的通用属性</span><br><span class="line">**************************************************************************/</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/** 任务携带的中间数据 */</span></span><br><span class="line"><span class="keyword">protected</span> Object mData;</span><br><span class="line"><span class="comment">/** 后期处理任务数据/结果时, 需要的额外参数 */</span></span><br><span class="line"><span class="keyword">protected</span> RequestParams mParam;</span><br><span class="line"><span class="comment">/** 后期处理任务数据/结果时, 需要的额外行为类型 */</span></span><br><span class="line"><span class="keyword">protected</span> Object mActionType;</span><br><span class="line"></span><br><span class="line"><span class="comment">/***************************************************************************</span><br><span class="line">* 任务的拥有者和处理者</span><br><span class="line">**************************************************************************/</span></span><br><span class="line"><span class="comment">/** 上下文对象 */</span></span><br><span class="line"><span class="keyword">protected</span> Object mContext;</span><br><span class="line"><span class="comment">/** 发起任务的元素 */</span></span><br><span class="line"><span class="keyword">protected</span> Object srcElement;</span><br><span class="line"><span class="comment">/** 任务的拥有者 实现了IEventHandler的BaseActivity, 它不一定是发起任务的元素 */</span></span><br><span class="line"><span class="keyword">protected</span> Object mOwner;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>IOThread：用于任务的处理，可根据产品需求，创建1~3个IOThread（模仿线程池），内部可使用Task的任务对列，，用于处理任务页面或模块发出的IOTask，，thread只有一个run方法，不多写了，注意对任务对列的操作 锁机制</p>
+<p>至于IO具体的执行，不多说了，很多的框架大同小异，个人建议使用官方推荐的vollery</p>
+<p>最后结论：</p>
+<p>文章的目的是指出，产品需要对用户体验做优化，这时要细分网络返回状态，因此使用Task机制，携带一些数据和定义一系列状态，最后供任务拥有者 mOwner 做switch判断，相应处理各种提示。</p>
+<p>因此在app框架搭建前，请尽量先封装后这些通用逻辑。</p>
+
+      
+      
+  <div class="article-statement">
+    <hr>  
+    1.除非注明，本博文章均为原创，转载请以链接形式标明本文地址。<br>
+    2.本博文章只代表博主当时的观点或结论，与博主公司没有任何关系。<br>
+    3.如果本文帮到了您，不妨点一下右下角的 <a>分享到</a> 按钮。<br>
+    4.您的鼓励是博主写作最大的动力，感谢您的分享和赞赏，好人一生平安。<br>
+  </div>
+
+
+
+    </div>
+    
+    <footer class="article-footer">
+      
+        <a data-url="http://www.zhaoyb.cn/2015/05/29/io-e6-a8-a1-e5-9d-97-e6-90-ad-e5-bb-ba-e4-ba-a7-e5-93-81-e5-af-bc-e5-90-91-ef-bc-89/" data-id="cik7zgekw003gi6s6e6fh9e5k" class="article-share-link" data-share="baidu">分享到</a>
+      
+
+      
+        <a href="http://www.zhaoyb.cn/2015/05/29/io-e6-a8-a1-e5-9d-97-e6-90-ad-e5-bb-ba-e4-ba-a7-e5-93-81-e5-af-bc-e5-90-91-ef-bc-89/#ds-thread" class="article-comment-link">评论</a>
+      
+
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2015/06/29/zlibrary-e6-a1-86-e6-9e-b6/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">下一篇</strong>
+      <div class="article-nav-title">
+        
+          ZLibrary框架
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/05/21/e4-bb-8e-e4-bb-a3-e7-a0-81-e8-a7-92-e5-ba-a6-e8-bf-9b-e8-a1-8c-e4-bc-98-e5-8c-96-e7-9a-84-e6-8a-80-e5-b7-a7/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">上一篇</strong>
+      <div class="article-nav-title">从代码角度进行优化的技巧</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+  <section id="comments">
+    <div id="ds-thread" class="ds-thread" data-thread-key="2015/05/29/io-e6-a8-a1-e5-9d-97-e6-90-ad-e5-bb-ba-e4-ba-a7-e5-93-81-e5-af-bc-e5-90-91-ef-bc-89/" data-title="IO模块搭建(产品导向）" data-url="http://www.zhaoyb.cn/2015/05/29/io-e6-a8-a1-e5-9d-97-e6-90-ad-e5-bb-ba-e4-ba-a7-e5-93-81-e5-af-bc-e5-90-91-ef-bc-89/"></div>
+  </section>
+</section>
+      
+      <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Android/">Android</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/IOS/">IOS</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/开源代码/">开源代码</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/杂谈/">杂谈</a><span class="category-list-count">3</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">2016年 01月</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/12/">2015年 12月</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">2015年 08月</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">2015年 07月</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">2015年 06月</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">2015年 05月</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">2015年 04月</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">2015年 03月</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/01/">2015年 01月</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/12/">2014年 12月</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/11/">2014年 11月</a><span class="archive-list-count">3</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">友情链接</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="http://weibo.com/zhaoyb0319/" target="_blank">zhaoyb的微博</a>
+          </li>
+        
+          <li>
+            <a href="https://github.com/zhaoyb0319/" target="_blank">zhaoyb的GitHub</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+      
+    </div>
+    <footer id="footer">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      Copyright &copy; 2012 - 2016 <a href="/" target="_blank">Zhaoyb</a>.
+      &nbsp;|&nbsp;
+      <span id="busuanzi_container_site_pv">
+        总访问量 <a href="http://service.ibruce.info/" target="_blank"><span id="busuanzi_value_site_pv"></span></a> 次
+      </span>
+      <span id="busuanzi_container_site_uv">
+        <a href="http://service.ibruce.info/" target="_blank"><span id="busuanzi_value_site_uv"></span></a> 人.
+      </span>      
+    </div>
+  </div>
+</footer>
+
+  </div>
+  <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">首页</a>
+  
+    <a href="/archives" class="mobile-nav-link">文章</a>
+  
+    <a href="/about" class="mobile-nav-link">关于</a>
+  
+</nav>
+  <!-- totop start -->
+<div id="totop">
+<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+</div>
+
+<!-- totop end -->
+
+<!-- 多说公共js代码 start -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"zhaoyb"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0]
+     || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+  </script>
+<!-- 多说公共js代码 end -->
+
+
+<!-- 百度分享 start -->
+
+<div id="article-share-box" class="article-share-box">
+  <div id="bdshare" class="bdsharebuttonbox article-share-links">
+    <a class="article-share-weibo" data-cmd="tsina" title="分享到新浪微博"></a>
+    <a class="article-share-weixin" data-cmd="weixin" title="分享到微信"></a>
+    <a class="article-share-qq" data-cmd="sqq" title="分享到QQ"></a>
+    <a class="article-share-renren" data-cmd="renren" title="分享到人人网"></a>
+    <a class="article-share-more" data-cmd="more" title="更多"></a>
+  </div>
+</div>
+<script>window._bd_share_config={"common":{},"share":{"bdCustomStyle":"/css/bdshare.css"}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?cdnversion='+~(-new Date()/36e5)];</script>
+
+<!-- 百度分享 end -->
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css" type="text/css">
+  <script src="/fancybox/jquery.fancybox.pack.js" type="text/javascript"></script>
+
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,318 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Timer与ScheduledExecutorService间的抉择 | Zhaoyb</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!-- Set render engine for 360 browser -->
+  <meta name="renderer" content="webkit">
+  <!-- No Baidu Siteapp-->
+  <meta http-equiv="Cache-Control" content="no-siteapp"/>
+  <meta name="description" content="前段时间，有个需求，需要实现儿童的防尘迷，当孩子玩手机一定时间后，游戏直接暂定，达到防沉迷效果，当时使用的方法是 启动后台线程，做一类似秒表的功能，到期后continue,,,,,今天偶然发现一种新的实现方式ScheduledExecutorService，因为稍微比较了下，Timer和ScheduledExecutorService的区别:
+java.util.Timer计时器有管理任务延迟执行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Timer与ScheduledExecutorService间的抉择">
+<meta property="og:url" content="http://www.zhaoyb.cn/2014/12/04/timer-e4-b8-8escheduledexecutorservice-e9-97-b4-e7-9a-84-e6-8a-89-e6-8b-a9/index.html">
+<meta property="og:site_name" content="Zhaoyb">
+<meta property="og:description" content="前段时间，有个需求，需要实现儿童的防尘迷，当孩子玩手机一定时间后，游戏直接暂定，达到防沉迷效果，当时使用的方法是 启动后台线程，做一类似秒表的功能，到期后continue,,,,,今天偶然发现一种新的实现方式ScheduledExecutorService，因为稍微比较了下，Timer和ScheduledExecutorService的区别:
+java.util.Timer计时器有管理任务延迟执行">
+<meta property="og:updated_time" content="2016-02-04T08:08:50.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Timer与ScheduledExecutorService间的抉择">
+<meta name="twitter:description" content="前段时间，有个需求，需要实现儿童的防尘迷，当孩子玩手机一定时间后，游戏直接暂定，达到防沉迷效果，当时使用的方法是 启动后台线程，做一类似秒表的功能，到期后continue,,,,,今天偶然发现一种新的实现方式ScheduledExecutorService，因为稍微比较了下，Timer和ScheduledExecutorService的区别:
+java.util.Timer计时器有管理任务延迟执行">
+  
+  
+    <link rel="icon" href="/img/logo.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <!-- Add to homescreen for Chrome on Android -->    
+    <link rel="icon" sizes="192x192" href="/img/logo.png">
+    <!-- Add to homescreen for Safari on iOS -->
+    <link rel="apple-touch-icon-precomposed" href="/img/logo.png">    
+    <!-- Tile icon for Win8 (144x144 + tile color) -->
+    <meta name="msapplication-TileImage" content="/img/logo.png">
+    <meta name="msapplication-TileColor" content="#0e90d2">
+  
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  <!--[if lt IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.min.js"></script><![endif]-->
+  
+  
+<script type="text/javascript">
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?10f2720e6f47d1b4a5ebc811df8dc361";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+</head>
+<body>
+<div id="container">
+  <div id="wrap">
+    <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Zhaoyb</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">专注于移动互联网，Android、IOS、开源及性能优化</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">首页</a>
+        
+          <a class="main-nav-link" href="/archives">文章</a>
+        
+          <a class="main-nav-link" href="/about">关于</a>
+        
+      </nav>
+      <!--
+      <nav id="sub-nav">
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="http://www.baidu.com/baidu" method="get" accept-charset="utf-8" class="search-form">
+          <input type="search" name="word" maxlength="20" class="search-form-input" placeholder="Search">
+          <input type="submit" value="" class="search-form-submit">
+          <input name=tn type=hidden value="bds">
+          <input name=cl type=hidden value="3">
+          <input name=ct type=hidden value="2097152">
+          <input type="hidden" name="si" value="www.zhaoyb.cn">
+        </form>
+      </div>
+      -->
+    </div>
+  </div>
+</header>
+    <div class="outer">
+      <section id="main"><article id="post-timer-e4-b8-8escheduledexecutorservice-e9-97-b4-e7-9a-84-e6-8a-89-e6-8b-a9" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/12/04/timer-e4-b8-8escheduledexecutorservice-e9-97-b4-e7-9a-84-e6-8a-89-e6-8b-a9/" class="article-date">
+  <time datetime="2014-12-04T03:38:45.000Z" itemprop="datePublished">2014-12-04</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Timer与ScheduledExecutorService间的抉择
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <p>前段时间，有个需求，需要实现儿童的防尘迷，当孩子玩手机一定时间后，游戏直接暂定，达到防沉迷效果，当时使用的方法是 启动后台线程，做一类似秒表的功能，到期后continue,,,,,今天偶然发现一种新的实现方式ScheduledExecutorService，因为稍微比较了下，Timer和ScheduledExecutorService的区别:</p>
+<p>java.util.Timer计时器有管理任务延迟执行(“如1000ms后执行任务”)以及周期性执行(“如每500ms执行一次该任务”)。<br>但是，Timer存在一些缺陷<br><a id="more"></a></p>
+<ul>
+<li>它对调度的支持是基于绝对时间,而不是相对时间的，由此任务对系统时钟的改变是敏的。</li>
+<li>TimerTask抛出未检查的异常，Timer将会产生无法预料的行为。</li>
+<li>Timer线程并不捕获异常，所以TimerTask抛出的未检查的异常会终止timer线程。<br>小总结：timer的bug：60秒执行一次的话，如果用户修改了时间的话 那么时针都会归0，本来是临近10秒执行的时候timer又会重新计时一次 再等60才执行。</li>
+</ul>
+<p>测试Timer的例子</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.Timer;</span><br><span class="line"><span class="keyword">import</span> java.util.TimerTask;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TimerTest</span> </span>&#123;</span><br><span class="line">	<span class="keyword">private</span> Timer timer = <span class="keyword">new</span> Timer();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 启动计时器</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">lanuchTimer</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		timer.schedule(<span class="keyword">new</span> TimerTask() &#123;</span><br><span class="line">			<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">				<span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException();</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;, <span class="number">1000</span> * <span class="number">3</span>, <span class="number">500</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 向计时器添加一个任务</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addOneTask</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		timer.schedule(<span class="keyword">new</span> TimerTask() &#123;</span><br><span class="line">			<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">				System.out.println(&amp;quot;hello world&amp;quot;);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;, <span class="number">1000</span> * <span class="number">1</span>, <span class="number">1000</span> * <span class="number">5</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">		TimerTest test = <span class="keyword">new</span> TimerTest();</span><br><span class="line">		test.lanuchTimer();</span><br><span class="line">		Thread.sleep(<span class="number">1000</span> * <span class="number">5</span>);<span class="comment">// 5秒钟之后添加一个新任务</span></span><br><span class="line">		test.addOneTask();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行该程序，Timer会抛出一个RumtimeException和java.lang.IllegalStateException:Timer already cancelled.<br>同时Timer还将它的问题传染给调用者，这个调用者原本试图提交一个TimerTask的，你可能希望程序会一直运行下去，然而实际情况如程序所示5秒钟后就中止了，还伴随着一个异常，异常的消息是”Timer already cancelled”。</p>
+<p>用ScheduledThreadPoolExector改进后的例子</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ScheduledExecutorTest</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 线程池能按时间计划来执行任务，允许用户设定计划执行任务的时间，int类型的参数是设定</span></span><br><span class="line">	<span class="comment">// 线程池中线程的最小数目。当任务较多时，线程池可能会自动创建更多的工作线程来执行任务</span></span><br><span class="line">	<span class="comment">// 此处用Executors.newSingleThreadScheduledExecutor()更佳。</span></span><br><span class="line">	<span class="keyword">public</span> ScheduledExecutorService scheduExec = Executors</span><br><span class="line">			.newScheduledThreadPool(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 启动计时器</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">lanuchTimer</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		Runnable task = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">			<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">				<span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException();</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;;</span><br><span class="line">		scheduExec.scheduleWithFixedDelay(task, <span class="number">1000</span> * <span class="number">5</span>, <span class="number">1000</span> * <span class="number">10</span>,</span><br><span class="line">				TimeUnit.MILLISECONDS);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 添加新任务</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addOneTask</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		Runnable task = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">			<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">				System.out.println(&amp;quot;welcome to china&amp;quot;);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;;</span><br><span class="line">		scheduExec.scheduleWithFixedDelay(task, <span class="number">1000</span> * <span class="number">1</span>, <span class="number">1000</span>,</span><br><span class="line">				TimeUnit.MILLISECONDS);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">		ScheduledExecutorTest test = <span class="keyword">new</span> ScheduledExecutorTest();</span><br><span class="line">		test.lanuchTimer();</span><br><span class="line">		Thread.sleep(<span class="number">1000</span> * <span class="number">5</span>);<span class="comment">// 5秒钟之后添加新任务</span></span><br><span class="line">		test.addOneTask();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+      
+  <div class="article-statement">
+    <hr>  
+    1.除非注明，本博文章均为原创，转载请以链接形式标明本文地址。<br>
+    2.本博文章只代表博主当时的观点或结论，与博主公司没有任何关系。<br>
+    3.如果本文帮到了您，不妨点一下右下角的 <a>分享到</a> 按钮。<br>
+    4.您的鼓励是博主写作最大的动力，感谢您的分享和赞赏，好人一生平安。<br>
+  </div>
+
+
+
+    </div>
+    
+    <footer class="article-footer">
+      
+        <a data-url="http://www.zhaoyb.cn/2014/12/04/timer-e4-b8-8escheduledexecutorservice-e9-97-b4-e7-9a-84-e6-8a-89-e6-8b-a9/" data-id="cik7zgekp0037i6s6b9h66w2v" class="article-share-link" data-share="baidu">分享到</a>
+      
+
+      
+        <a href="http://www.zhaoyb.cn/2014/12/04/timer-e4-b8-8escheduledexecutorservice-e9-97-b4-e7-9a-84-e6-8a-89-e6-8b-a9/#ds-thread" class="article-comment-link">评论</a>
+      
+
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/12/04/e3-80-90-e8-bd-ac-e3-80-91-e6-b5-ae-e8-ba-81-e5-b0-86-e6-98-af-e7-a7-bb-e5-8a-a8-e4-ba-92-e8-81-94-e7-bd-91-e7-9a-84-e6-9c-80-e5-a4-a7-e5-8d-b1-e6-9c-ba/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">下一篇</strong>
+      <div class="article-nav-title">
+        
+          【转】浮躁将是移动互联网的最大危机
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/11/24/e4-bb-8e-e7-82-b9-e5-88-b0-e9-9d-a2/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">上一篇</strong>
+      <div class="article-nav-title">从点到面</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+  <section id="comments">
+    <div id="ds-thread" class="ds-thread" data-thread-key="2014/12/04/timer-e4-b8-8escheduledexecutorservice-e9-97-b4-e7-9a-84-e6-8a-89-e6-8b-a9/" data-title="Timer与ScheduledExecutorService间的抉择" data-url="http://www.zhaoyb.cn/2014/12/04/timer-e4-b8-8escheduledexecutorservice-e9-97-b4-e7-9a-84-e6-8a-89-e6-8b-a9/"></div>
+  </section>
+</section>
+      
+      <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Android/">Android</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/IOS/">IOS</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/开源代码/">开源代码</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/杂谈/">杂谈</a><span class="category-list-count">3</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">2016年 01月</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/12/">2015年 12月</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">2015年 08月</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">2015年 07月</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">2015年 06月</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">2015年 05月</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">2015年 04月</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">2015年 03月</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/01/">2015年 01月</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/12/">2014年 12月</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/11/">2014年 11月</a><span class="archive-list-count">3</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">友情链接</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="http://weibo.com/zhaoyb0319/" target="_blank">zhaoyb的微博</a>
+          </li>
+        
+          <li>
+            <a href="https://github.com/zhaoyb0319/" target="_blank">zhaoyb的GitHub</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+      
+    </div>
+    <footer id="footer">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      Copyright &copy; 2012 - 2016 <a href="/" target="_blank">Zhaoyb</a>.
+      &nbsp;|&nbsp;
+      <span id="busuanzi_container_site_pv">
+        总访问量 <a href="http://service.ibruce.info/" target="_blank"><span id="busuanzi_value_site_pv"></span></a> 次
+      </span>
+      <span id="busuanzi_container_site_uv">
+        <a href="http://service.ibruce.info/" target="_blank"><span id="busuanzi_value_site_uv"></span></a> 人.
+      </span>      
+    </div>
+  </div>
+</footer>
+
+  </div>
+  <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">首页</a>
+  
+    <a href="/archives" class="mobile-nav-link">文章</a>
+  
+    <a href="/about" class="mobile-nav-link">关于</a>
+  
+</nav>
+  <!-- totop start -->
+<div id="totop">
+<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+</div>
+
+<!-- totop end -->
+
+<!-- 多说公共js代码 start -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"zhaoyb"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0]
+     || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+  </script>
+<!-- 多说公共js代码 end -->
+
+
+<!-- 百度分享 start -->
+
+<div id="article-share-box" class="article-share-box">
+  <div id="bdshare" class="bdsharebuttonbox article-share-links">
+    <a class="article-share-weibo" data-cmd="tsina" title="分享到新浪微博"></a>
+    <a class="article-share-weixin" data-cmd="weixin" title="分享到微信"></a>
+    <a class="article-share-qq" data-cmd="sqq" title="分享到QQ"></a>
+    <a class="article-share-renren" data-cmd="renren" title="分享到人人网"></a>
+    <a class="article-share-more" data-cmd="more" title="更多"></a>
+  </div>
+</div>
+<script>window._bd_share_config={"common":{},"share":{"bdCustomStyle":"/css/bdshare.css"}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?cdnversion='+~(-new Date()/36e5)];</script>
+
+<!-- 百度分享 end -->
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css" type="text/css">
+  <script src="/fancybox/jquery.fancybox.pack.js" type="text/javascript"></script>
+
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+</div>
+</body>
+</html>
